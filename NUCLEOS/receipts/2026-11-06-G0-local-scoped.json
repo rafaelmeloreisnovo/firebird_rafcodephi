@@ -1,0 +1,105 @@
+{
+  "schema": "raf-nucleos-local-test-receipt-v1",
+  "event_id": "MU-FIREBIRD-NUCLEOS-G0-20261106-S1",
+  "date_utc": "2026-11-06T04:43:34Z",
+  "repo": "rafaelmeloreisnovo/firebird_rafcodephi",
+  "branch": "feat/nucleos-evidence-guard-v1-20261106",
+  "tested_commit": "3577d564d8518db80b60e9c340fbdfc4a0a9e7e5",
+  "source_file_provenance": {
+    "NUCLEOS/src/raf_guard.c": {
+      "git_blob": "7f7af37511755ea3eece743952d0b994f60288a6",
+      "sha256": "b6b6c36d4a3b93dd43eee01f6897ce5bea3095c4303c56257d983c4cc4dc5557"
+    },
+    "NUCLEOS/include/raf_guard.h": {
+      "git_blob": "32a7c6067669e7150f84e64993d06277f8a835c9",
+      "sha256": "6f1db5ba5663b42209fe700a7b09248293dce6464956d25d31b770fd9cafb1cb"
+    },
+    "NUCLEOS/tests/test_guard.c": {
+      "git_blob": "f74d597ec7aa2d0264bf24c594183d6f0310dce7",
+      "sha256": "7ab8da97432ac963661df44bb780175dd68f8054f6b3351dfdbe79dd298e43e2"
+    }
+  },
+  "execution": {
+    "environment": "Linux 6.18.57 x86_64; local offline sandbox",
+    "compilers": [
+      "GCC 14.2.0",
+      "Clang 17.0.0"
+    ],
+    "flags": [
+      "-std=c11",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-pedantic"
+    ],
+    "test_matrix": [
+      {
+        "compiler": "gcc",
+        "options": "-O0",
+        "assertions_passed": 30041,
+        "exit_code": 0
+      },
+      {
+        "compiler": "gcc",
+        "options": "-O2",
+        "assertions_passed": 30041,
+        "exit_code": 0
+      },
+      {
+        "compiler": "clang",
+        "options": "-O2",
+        "assertions_passed": 30041,
+        "exit_code": 0
+      },
+      {
+        "compiler": "gcc",
+        "options": "-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer",
+        "assertions_passed": 30041,
+        "exit_code": 0
+      },
+      {
+        "compiler": "clang",
+        "options": "-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer",
+        "assertions_passed": 30041,
+        "exit_code": 0
+      }
+    ],
+    "synthetic_samples_per_run": 10000,
+    "undefined_external_symbols_core_gcc": 0,
+    "undefined_external_symbols_core_clang": 0,
+    "negative_tests": [
+      "replayed zero-progress stall",
+      "unknown vs zero metric",
+      "clock rewind",
+      "progress rewind",
+      "IO error",
+      "bad policy",
+      "sequence exhaustion",
+      "CRC corruption",
+      "reserved field",
+      "unknown flags",
+      "invalid pointers"
+    ]
+  },
+  "gates": {
+    "G0": "PASS_SCOPED_LOCAL",
+    "G1": "NOT_RUN",
+    "G2": "NOT_RUN",
+    "G3": "NOT_RUN",
+    "G4": "NOT_RUN",
+    "G5": "NOT_IMPLEMENTED",
+    "G6": "NOT_RUN"
+  },
+  "limitations": [
+    "Isolated C tests only; Firebird engine and remote protocol NOT tested",
+    "Only Linux x86_64 tested; ARM, Windows and Android NOT_RUN",
+    "No independent external reproduction",
+    "CRC32 is NOT cryptographic, cannot authenticate or anchor an audit receipt",
+    "No Firebird adapter, live watchdog, autonomous recovery or database writes"
+  ],
+  "claim_allowed": false,
+  "rollback": "Revert dedicated NUCLEOS commits on feature branch; Firebird engine and production database remain unchanged",
+  "source_blob_hashes_verified_against_connected_GitHub": true
+}
