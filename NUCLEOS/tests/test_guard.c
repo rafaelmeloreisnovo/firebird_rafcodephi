@@ -121,7 +121,11 @@ int main(void)
         CHECK(r.state == RAF_UNKNOWN && r.reason == RAF_REASON_SEQ_EXHAUSTED);
         CHECK(g.sequence == UINT64_MAX && !g.initialized);
     }
-    CHECK(raf_frame_verify(frame) == 0); /* invalid/unknown bits remain rejected */
+    CHECK(raf_frame_verify(frame) == 1); /* failed encode preserves previous valid frame */
+    frame[5] |= 8u; /* reject unrecognized known-field bits */
+    CHECK(!raf_frame_verify(frame));
+    frame[5] &= (uint8_t)~8u;
+    CHECK(raf_frame_verify(frame));
     CHECK(!raf_frame_verify(0));
     CHECK(!raf_frame_encode(0, 0, 0));
     /* Adversarial regression: sustained empty progress must never emit a recovery action. */
