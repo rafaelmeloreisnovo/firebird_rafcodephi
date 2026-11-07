@@ -102,7 +102,12 @@ cd contrib/raf_freestanding_gate
 cc -std=c11 -O2 -ffreestanding -fno-builtin -Wall -Wextra -Wpedantic \
    -Wconversion -Wsign-conversion -Werror -Iinclude \
    -c src/raf_gate_recovery.c -o /tmp/raf_gate_recovery.o
-nm -u /tmp/raf_gate_recovery.o # expected none
+cc -std=c11 -O2 -ffreestanding -fno-builtin -Wall -Wextra -Wpedantic \
+   -Wconversion -Wsign-conversion -Werror -Iinclude \
+   -c src/raf_gate.c -o /tmp/raf_gate.o
+cc -nostdlib -r /tmp/raf_gate.o /tmp/raf_gate_recovery.o \
+   -o /tmp/raf_gate_combined.o
+nm -u /tmp/raf_gate_combined.o # expected none; internal refs resolved
 cc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Wconversion \
    -Wsign-conversion -Werror -fsanitize=address,undefined \
    -fno-omit-frame-pointer -Iinclude \
