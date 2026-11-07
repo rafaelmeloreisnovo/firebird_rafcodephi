@@ -40,10 +40,17 @@ jobs:
             "${CC}" -std=c11 -O2 -ffreestanding -fno-builtin \
               -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror \
               -Iinclude -c "${src}" -o "${object}"
-            if [[ -n "$(nm -u "${object}")" ]]; then
-              echo "FAIL: core has undefined symbols: ${src}"; exit 1
-            fi
           done
+          # Cross-module references are internal. Resolve them in a relocatable
+          # object before testing for imports from the OS/libc/runtime.
+          "${CC}" -nostdlib -r "${RUNNER_TEMP}/raf_gate.o" \
+            "${RUNNER_TEMP}/raf_gate_recovery.o" \
+            -o "${RUNNER_TEMP}/raf_gate_combined.o"
+          if [[ -n "$(nm -u "${RUNNER_TEMP}/raf_gate_combined.o")" ]]; then
+            echo "FAIL: combined freestanding core has external undefined symbols"
+            nm -u "${RUNNER_TEMP}/raf_gate_combined.o"
+            exit 1
+          fi
       - name: Original V1 compatibility regression
         shell: bash
         env:
