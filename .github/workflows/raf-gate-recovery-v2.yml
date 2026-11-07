@@ -1,0 +1,80 @@
+# Scoped opt-in audit test. No deploy/release, no production integration.
+name: RAFAELIA receipt-pair freshness (research v2)
+on:
+  pull_request:
+    paths:
+      - 'contrib/raf_freestanding_gate/**'
+      - '.github/workflows/raf-gate-recovery-v2.yml'
+  push:
+    branches:
+      - research/9251-receipt-freshness-v2-20261107
+    paths:
+      - 'contrib/raf_freestanding_gate/**'
+      - '.github/workflows/raf-gate-recovery-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scoped-freestanding-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - name: Checkout pinned without stored credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Strict freestanding object build and undefined-symbol gate
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          cd contrib/raf_freestanding_gate
+          for src in src/raf_gate.c src/raf_gate_recovery.c; do
+            object="${RUNNER_TEMP}/$(basename "${src}" .c).o"
+            "${CC}" -std=c11 -O2 -ffreestanding -fno-builtin \
+              -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror \
+              -Iinclude -c "${src}" -o "${object}"
+          done
+          # Cross-module references are internal. Resolve them in a relocatable
+          # object before testing for imports from the OS/libc/runtime.
+          "${CC}" -nostdlib -r "${RUNNER_TEMP}/raf_gate.o" \
+            "${RUNNER_TEMP}/raf_gate_recovery.o" \
+            -o "${RUNNER_TEMP}/raf_gate_combined.o"
+          if [[ -n "$(nm -u "${RUNNER_TEMP}/raf_gate_combined.o")" ]]; then
+            echo "FAIL: combined freestanding core has external undefined symbols"
+            nm -u "${RUNNER_TEMP}/raf_gate_combined.o"
+            exit 1
+          fi
+      - name: Original V1 compatibility regression
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          cd contrib/raf_freestanding_gate
+          "${CC}" -std=c11 -O1 -g -Wall -Wextra -Wpedantic \
+            -Wconversion -Wsign-conversion -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Iinclude src/raf_gate.c tests/test_raf_gate.c \
+            -o "${RUNNER_TEMP}/test_raf_gate"
+          "${RUNNER_TEMP}/test_raf_gate"
+      - name: V2 adversarial receipt-pair and authority tests
+        shell: bash
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          cd contrib/raf_freestanding_gate
+          "${CC}" -std=c11 -O1 -g -Wall -Wextra -Wpedantic \
+            -Wconversion -Wsign-conversion -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Iinclude src/raf_gate.c src/raf_gate_recovery.c \
+            tests/test_raf_gate_recovery.c \
+            -o "${RUNNER_TEMP}/test_raf_gate_recovery"
+          "${RUNNER_TEMP}/test_raf_gate_recovery"
