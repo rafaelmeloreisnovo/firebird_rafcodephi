@@ -855,6 +855,41 @@ bool HashJoin::fetchRecord(thread_db* tdbb, Impure* impure, FB_SIZE_T stream) co
 	const BufferedStream* const arg = m_subs[stream].buffer;
 
 	ULONG position;
+
+	if (m_joinType == JoinType::SEMI || m_joinType == JoinType::ANTI)
+	{
+		// Hash equality alone is not key equality (e.g. NULL and numeric zero).
+		// A semi/anti join must inspect all candidates sharing the same hash.
+		const auto request = tdbb->getRequest();
+		const auto& sub = m_subs[stream];
+		fb_assert(m_leader.keys->getCount() == sub.keys->getCount());
+
+		while (hashTable->iterate(stream, impure->irsb_leader_hash, position))
+		{
+			arg->locate(tdbb, position);
+			if (!arg->getRecord(tdbb))
+				continue;
+
+			bool sameKeys = true;
+			for (FB_SIZE_T i = 0; i < m_leader.keys->getCount(); i++)
+			{
+				const auto leaderKey = EVL_expr(tdbb, request, (*m_leader.keys)[i]);
+				const auto innerKey = EVL_expr(tdbb, request, (*sub.keys)[i]);
+
+				if ((!leaderKey != !innerKey) ||
+					(leaderKey && MOV_compare(tdbb, leaderKey, innerKey)))
+				{
+					sameKeys = false;
+					break;
+				}
+			}
+
+			if (sameKeys)
+				return true;
+		}
+		return false;
+	}
+
 	if (hashTable->iterate(stream, impure->irsb_leader_hash, position))
 	{
 		arg->locate(tdbb, position);
@@ -862,9 +897,6 @@ bool HashJoin::fetchRecord(thread_db* tdbb, Impure* impure, FB_SIZE_T stream) co
 		if (arg->getRecord(tdbb))
 			return true;
 	}
-
-	if (m_joinType == JoinType::SEMI || m_joinType == JoinType::ANTI)
-		return false;
 
 	while (true)
 	{
