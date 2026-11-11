@@ -876,7 +876,7 @@ bool HashJoin::fetchRecord(thread_db* tdbb, Impure* impure, FB_SIZE_T stream) co
 				const auto leaderKey = EVL_expr(tdbb, request, (*m_leader.keys)[i]);
 				const auto innerKey = EVL_expr(tdbb, request, (*sub.keys)[i]);
 
-				if ((!leaderKey != !innerKey) ||
+				if (((leaderKey == nullptr) != (innerKey == nullptr)) ||
 					(leaderKey && MOV_compare(tdbb, leaderKey, innerKey)))
 				{
 					sameKeys = false;
